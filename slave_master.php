@@ -38,4 +38,7 @@ class Db {
     public function get_res () {
         return $this->res;
     }
+    public function func () {
+
+    }
 }
