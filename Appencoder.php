@@ -8,6 +8,11 @@ class BloggsApptEncoder extends ApptEncoder {
         return "Appointment data encoded in MegaCal format\n";
     }
 }
+abstract class CommsManger {
+    abstract function getHeaderText();
+    abstract function getApptEncoder();
+    abstract function getFooterText();
+}
 class CommsManager {
     public function getApptEncoder () {
         return new BloggsApptEncoder();
