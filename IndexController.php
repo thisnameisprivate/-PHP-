@@ -201,4 +201,304 @@ class IndexController extends Controller {
         ? $this->ajaxReturn($result)
         : $this->ajaxReturn(true, 'eval');
     }
+    public function statusSuffixConf () {
+        return array(
+            'arrival' => '已到',
+            'arrivalOut' => '未到',
+            'arrivalStr' => $_COOKIE['tableName'] . '_arrival',
+            'arrivalOutStr' => $_COOKIE['tableName'] . '_arrivalOut',
+            'endTime' => 300
+        );
+    }
+    private function writeDataLpushRedis ($operation, $data) {
+        $tableName = $_COOKIE['tableName'];
+        $stateCollegeConf = array(
+            0 => $tableName . '_arrivalTotal',
+            1 => $tableName . '_arrival',
+            2 => $tableName . '_arrivalOut',
+            3 => $tableName . '_yesterTotal',
+            4 => $tableName . '_yesterArrival',
+            5 => $tableName . '_yesterArrivalOut',
+            6 => $tableName . '_thisTotal',
+            7 => $tableName . '_thisArrival',
+            8 => $tableName . '_thisArrivalOut',
+            9 => $tableName . '_lastTotal',
+            10 => $tableName . '_lastArrival',
+            11 => $tableName . '_lastArrivalOut'
+        );
+        $statusSuffix = $this->statusSuffixConf();
+        $redis = $this->setCache();
+        if (date('d', time($data['oldDate'])) == (date('d'))) {
+            if ($data['status'] == $statusSuffix['arrival']) {
+                $redis->$operation($stateCollegeConf[0]);
+                $redis->$operation($stateCollegeConf[1]);
+            }
+            if ($data['status'] == $statusSuffix['arrivalOut']) {
+                $redis->$operation($stateCollegeConf[0]);
+                $redis->$operation($stateCollegeConf[2]);
+            }
+        } else if (date('d', time($data['oldDate'])) == date('d', strtotime('-1 day'))) {
+            if ($data['status'] == $statusSuffix['arrival']) {
+                $redis->$operation($stateCollegeConf[3]);
+                $redis->$operation($stateCollegeConf[4]);
+            } else {
+                $redis->$operation($stateCollegeConf[3]);
+                $redis->$operation($stateCollegeConf[5]);
+            }
+        }
+        if (date('m', time($data['oldDate'])) == date('m')) {
+            if ($data['status'] == $statusSuffix['arrival']) {
+                $redis->$operation($stateCollegeConf[6]);
+                $redis->$operation($stateCollegeConf[7]);
+            }
+            if ($data['status'] == $statusSuffix['arrivalOut']) {
+                $redis->$operation($stateCollegeConf[6]);
+                $redis->$operation($stateCollegeConf[8]);
+            }
+        } else if (date('m', time($data['oldDate'])) == date('m', strtotime('-1 month'))) {
+            if ($data['status'] == $statusSuffix['arrival']) {
+                $redis->$operation($stateCollegeConf[9]);
+                $redis->$operation($stateCollegeConf[10]);
+            } else {
+                $redis->$operation($stateCollegeConf[9]);
+                $redis->$operation($stateCollegeConf[11]);
+            }
+        }
+    }
+    public function editData () {
+        $visitData = json_decode($_GET['data'], true);
+        $tableName = $_COOKIE['tableName'];
+        $resolve = M($tableName)->where("id = {$_GET['id']}")->save($visitData);
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function hospitalsList () {
+        $this->display();
+    }
+    public function hospitalsCheck () {
+        $hospitals = M('hospital')->select();
+        ! empty($hospitals)
+        ? $this->arrayRecursive($hospitals, 'urldecode', true)
+        : $this->arrayRecursive(false, 'eval');
+        $hospitals = urldecode(json_encode($hospitals));
+        $hospitalsList = "{\"code\":0, \"msg\":\"\", \"count\":0, \"data\": $hospitals}";
+    }
+    public function hospitalsAdd () {
+        $hospitalsData = json_decode($_GET['data'], true);
+        $resolve = M('hospital')->add($hospitalsData);
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function disease () {
+        $this->display();
+    }
+    public function diseaseCheck () {
+        $tableName = $_COOKIE['tableName'];
+        $diseases = M('alldiseases')->where("tableName = '{$tableName}'")->field(array('id', 'diseases', 'addtime'))->select();
+        ! empty($diseases)
+        ? $this->arrayRecursive($diseases, 'urldecode', true)
+        : $this->ajaxReturn(false, 'eval');
+        $diseases = urldecode(json_encode($diseases));
+        $diseasesList = "{\"code\":0, \"msg\":\"\", \"count\":0, \"data\": $diseases}";
+        $this->ajaxReturn($diseasesList, 'eval');
+    }
+    public function diseaseAdd () {
+        $diseasesData = json_encode($_GET['data'], true);
+        $diseasesData['tableName'] = $_COOKIE['tableName'];
+        $resolve = M('alldiseases')->add($diseasesData);
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(true, 'eval');
+    }
+    public function diseaseDel () {
+        if (! is_numeric($_GET['id'])) $this->ajaxReturn(false, 'eval');
+        $resolve = M('alldiseases')->where("id = '{$_GET['id']}'")->delete();
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function typesof () {
+        $this->display();
+    }
+    public function typesofCheck () {
+        $typesof = M('fromaddress')->field(array('id', 'fromaddress', 'addtime'))->select();
+        ! empty($typesof)
+        ? $this->arrayRecursive($typesof, 'urldecode', true)
+        : $this->ajaxReturn(false, 'eval');
+        $typesof = urldecode(json_encode($typesof));
+        $typesofList = "{\"code\":0, \"msg\":\"\", \"count\":0, \"data\": $typesof}";
+        $this->ajaxReturn($typesofList, 'eval');
+    }
+    public function typesofDel () {
+        if (! is_numeric($_GET['id'])) $this->ajaxReturn(false, 'eval');
+        $resolve = M('fromaddress')->where("id = {$_GET['id']}")->delete();
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function typesofAdd () {
+        $typesofData = json_decode($_GET['data'], true);
+        $resolve = M('fromaddress')->add($typesofData);
+        ! empty($resolve)
+        ? $this->ajaxReturn(treu, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function doctor () {
+        $this->display();
+    }
+    public function doctorCheck () {
+        $custservice = M('custservice')->field(array('id', 'custservice', 'addtime'))->select();
+        ! empty($custservice)
+        ? $this->arrayRecursive($custservice, 'urldecode', true)
+        : $this->ajaxReturn(false, 'eval');
+        $custservice = urldecode(json_encode($custservice));
+        $custserviceList = "{\"code\":0, \"msg\":\"\", \"count\":0, \"data\": $custservice}";
+        $this->ajaxReturn($custserviceList, 'eval');
+    }
+    public function doctoradd () {
+        $doctorData = json_decode($_GET['data'], true);
+        $resolve = M('custservice')->add($doctorData);
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function doctorDel () {
+        if (! is_numeric($_GET['id'])) $this->ajaxReturn(false, 'eval');
+        $resolve = M('custservice')->where("id = {$_GET['id']}")->delete();
+        ! emppty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function arrivalStatus () {
+        $this->display();
+    }
+    public function arrivalStatusCheck () {
+        $arrivalStatus = M('arrivalstatus')->feild(array('id', 'arrivalStatus', 'addtime'))->select();
+        ! empty($arrivalStatus)
+        ? $this->arrayRecursvie($arrivalStatus, 'urldecode', true)
+        : $this->ajaxReturn(false, 'eval');
+        $arrivalStatus = urldecode(json_encode($arrivalStatus));
+        $arrivalStatusList = "{\"code\":0,  \"msg\":\"\", \"count\":0, \"data\": $arrivalStatus}";
+        $this->ajaxReturn($arrivalStatusList, 'eval');
+    }
+    public function arrivalStatusDel () {
+        if (! is_numeric($_GET['id'])) $this->ajaxReturn(false, 'eval');
+        $resolve = M('arrivalstatus')->where("id = {$_GET['id']}")->delete();
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function arrivalStatusAdd () {
+        $arrivalData = json_decode($_GET['data'], true);
+        $resolve = M('arrivalstatus')->add($arrivalData);
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function detailReport () {
+        $redis = $this->setCache();
+        $this->assign('ttl', $redis->ttl($_COOKIE['tableName']));
+        $this->display();
+    }
+    public function detailReportCheck () {
+        $redis = $this->setCache();
+        $tableName = $_COOKIE['tableName'];
+        if ($redis->exists($tableName)) {
+            $pserionCollection = json_decode($redis->get($tableName), true);
+        } else {
+            $pserionCollection = $this->persionCollection();
+            $redis->set($tableName, json_encode($pserionCollection));
+            $redis->expire($tableName, 1200);
+        }
+        if ($pserionCollection) {
+            $this->arrayRecursive($pserionCollection, 'urldecode', true);
+        } else {
+            $this->ajaxReturn(false, 'eval');
+        }
+        $pserionCollection = urldecode(json_encode($pserionCollection));
+        $pserionCOllectionList = "{\"code\":0, \"msg\":\"\", \"count\":0, \"data\": $pserionCollection}";
+        $this->ajaxReturn($pserionCollectionList, 'eval');
+    }
+    private function persionCollection () {
+        $persion = M('custservice')->field('custservice')->select();
+        foreach ($persion as $k => $v) foreach ($v as $key => $value) $keyNames[$k] = $value;
+        $persionCollection = array();
+        while (list($k, $v) = each($keyNames)) {
+            $persionCollection[$v]['arrival'] = $this->detail("custservice = '{$v}'", "TO_DAYS(oldDate) = TO_DAYS(NOW())", "status = '已到'");
+            $persionCollection[$v]['arrivalOut'] = $this->detail("custservice = '{$v}'", "TO_DAYS(oldDate) = TO_DAYS(NOW())", "status = '未到'");
+            $persionCollection[$v]['yesterArrival'] = $this->detail("custservice = '{$v}'", "TO_DAYS((NOW)) - TO_DAYS(oldDate) = 1", "status = '已到'");
+            $persionCollection[$v]['yesterArrivalOut'] = $this->detail("custservice = '{$v}'", "TO_DAYS(NOW()) - TO_DAYS(oldDate) = 1", "status = '未到'");
+            $persionCollection[$v]['thisArrival'] = $this->detail("custservice = '{$v}'", "DATE_FORMAT(oldDate, '%Y%m') = DATE_FORMAT(CURRENT(), '%Y%m')", "status = '已到'");
+            $persionCollection[$v]['thisArrivalOut'] = $this->detail("custservice = '{$v}'", "DATE_FORMAT(oldDate, '%Y%m') = DATE_FORMAT(CURRENT(), '%Y%m')", "status = '未到'");
+            $persionCOllection[$v]['lastArrival'] = $this->detail("custservice = '{$v}'", "PERIOD_DIFF(DATE_FORMAT(NOW(), '%Y%m'), DATE_FORMAT(oldDate, '%Y%m')) = 1", "status = '已到'");
+            $persionCollection[$v]['lastArrivalOut'] = $this->detail("cutservice = '{$v}'", "PERIOD_DIFF(DATE_FORMAT(NOW(), '%Y%m), DATE_FORMAT(oldDate, '%Y%m)) = 1", "status = '未到'");
+            $persionCollection[$v]['arrivalTotal'] = $persionCollection[$v]['arrival'] + $persionCollection[$v]['arrivalOut'];
+            $persionCollection[$v]['yseterTotal'] = $persionCollection[$v]['yesterArrival'] + $persionCollection[$v]['yesterArrivalOut'];
+            $persionCollection[$v]['thisTotal'] = $persionCollection[$v]['thisArrival'] + $persionCollection[$v]['thisArrivalOut'];
+            $persionCollection[$v]['lastTotal'] = $persionCollection[$v]['lasatArrival'] + $persionCollection[$v]['lastArrivalOut'];
+        }
+        $persionKeys = array_keys($persionCollection);
+        $persionCollList = array();
+        for ($i = 0; $i < count($persionKeys); $i ++) {
+            if ($persionKeys[$i] == $keyNames[$i]) {
+                $persionCollection[$persionKeys[$i]]['custservice'] = $keyNames[$i];
+                array_push($persionCollList, $persionCollection[$persionKeys[$i]]);
+            }
+        }
+        return $persionCollList;
+    }
+    public function mohtdata () {
+        $instance = M($_COOKIE['tableName']);
+        $redis = $this->setCache();
+        if ($redis->exists($_COOKIE['tableName'] . 'Month_echarst')) {
+            $redis->expire($_COOKIE['tableName'] . 'Month_echarst', 1200);
+        } else {
+            $arrival = array();
+            $arrival['reser'] = $instance->where("status = '预约未定' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['advan'] = $instance->where("status = '等待' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['arrival'] = $instance->where("status = '已到' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['arrivalOut'] = $instance->where("status = '未到' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['halfTotal'] = $instance->where("status = '全流失' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m)")->count();
+            $arrival['half'] = $instance->where("status = '半流失' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['treat'] = $instance->where("status = '已诊治' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $redis->set($_COOKIE['tableName'] . 'Month_echarst', json_encode($arrival));
+            $redis->expire($_COOKIE['tableName'] . 'Month_echarst', 1200);
+        }
+        $arrival = json_decode($redis->get($_COOKIE['tableName'] . 'Month_echarst'), true);
+        $this->assign('echarts', $arrival);
+        $this->display();
+    }
+    public function detail ($time, $status, $persion = null) {
+        $tableName = $_COOKIE['tableName'];
+        $allStatus = is_null($persion)
+            ? M($tableName)->where(array($time, $status))->count()
+            : M($tableName)->where(array($time, $status, $persion))->count();
+        return $allStatus;
+    }
+    private function arrayRecursive (&$array, $function, $apply_to_keys_also = false) {
+        static $recursive_counter = 0;
+        if (++$recursive_counter > 1000) {
+            die ('possible deep recursion attack');
+        }
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $this->arrayRecursive($array[$key], $function, $apply_to_keys_also);
+            } else {
+                $array[$key] = $function($value);
+            }
+            if ($apply_to_keys_also && is_string($key)) {
+                $new_key = $function($key);
+                if ($new_key != $key) {
+                    $array[$new_key] = $array[$key];
+                    unset($array[$key]);
+                }
+            }
+        }
+        $recursive_counter --;
+    }
+    public function access () {
+        $this->display();
+    }
 }
