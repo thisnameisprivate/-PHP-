@@ -1,6 +1,7 @@
 <?php
 
 namespace Admin\Controller;
+use PhpOffice\PhpSpreadsheet\Reader\Xls\MD5;
 use Think\COntroller;
 use Think\Exception;
 use Think\Upload;
@@ -500,5 +501,167 @@ class IndexController extends Controller {
     }
     public function access () {
         $this->display();
+    }
+    public function accessCheck () {
+        $user = M('management')->join('user')->where("user.username = management.pid")->select();
+        ! empty ($user)
+        ? $this->arrayRecursive($user, 'urldecode', true)
+        : $this->ajaxReturn(false, 'eval');
+        $user = urldecode(json_encode($user));
+        $userList = "{\"code\":0, \"msg\":\"\", \"count\":0, \"data\": $user}";
+        $this->ajaxReturn($userList, 'eval');
+    }
+    public function userDel () {
+        if (! is_numeric($_GET['id'])) $this->ajaxReturn(false, 'eval');
+        $username = M('user')->where("id = '{$_GET['id']}'")->field('username')->select();
+        $manageResolve = M('management')->where("pid = '{$username[0]['username']}'")->delete();
+        ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function userAdd () {
+        $management = json_decode($_GET['data'], true);
+        $userList['password'] = MD5($management['password']);
+        $userList['username'] = $management['username'];
+        array_splice($management, 0, 2);
+        $management['pid'] = $userList['username'];
+        $managementResolve = M('management')->add($management);
+        ! empty($managementResolve) && ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function userEdit () {
+        $management = json_decode($_GET['data'], true);
+        $managementKey = array_keys($management);
+        $fields = M('management')->getDbFields();
+        $redundantKeys = array_diff($fields, $managementKey);
+        while (list($k, $v) = each($redundantKeys)) $redundant[trim($v)] = '';
+        $management = array_merge($redundant, $management);
+        $addtime = date("Y-m-d H:i:s", time());
+        unset($management['id']);
+        $userList['password'] = MD5($management['password']);
+        $userList['username'] = $management['username'];
+        $userList['addtime']  = $addtime;
+        $management['pid'] = $userList['username'];
+        $management['addtime'] = $addtime;
+        unset($management['username'], $management['password']);
+        $username = M('user')->where("id = '{$_GET['id']}'")->field('username')->select();
+        $resolve = M('user')->where("id = '{$_GET['id']}'")->save($userList);
+        $managementUser = M('management')->where("pid = '{$username[0]['username']}'")->count();
+        $managementResolve = empty($managementUser)
+            ? M('management')->add($management)
+            : M('management')->where("pid = '{$username[0]['username']}'")->save($management);
+        ! empty($managementResolve) && ! empty($resolve)
+        ? $this->ajaxReturn(true, 'eval')
+        : $this->ajaxReturn(false, 'eval');
+    }
+    public function resources () {
+        $this->display();
+    }
+    public function resourcesCheck () {
+        if (array_key_exists('null', $_GET)) return false;
+        if (array_key_exists('date_min', $_GET)  && array_key_exists('date_max', $_GET)) {
+            $result = D('Collection')->resources($_GET);
+            if (is_array($result) && isset($result)) {
+                $hospitalVisitCount = $result[1];
+                $hospitalVisit = $this->arraySPlice($result[0]);
+            }
+        }
+        $this->arrayRecursive($hospitalVisit, 'urlencode', true);
+        $jsonVisit = urldecode(json_encode($hospitalVisit));
+        $visitList = "{\"code\":0, \"msg\":\"\", \"count\":$hospitalCount, \"data\":$jsonVisit}";
+        $this->ajaxReturn(str_replace(array("\m", "\r"), '\n', $visit), 'eval');
+    }
+    public function personal () {
+        $this->display();
+    }
+    public function personalUpload () {
+        $upload = new \Think\Upload();
+        $fielName = date("His", time());
+        $upload->maxSize     = 2097152;
+        $upload->exts        = array('jpg', 'gif', 'png', 'jpeg');
+        $upload->rootPath    = __ROOT__. "Public/statics/useriamge/";
+        $upload->savePath    = '';
+        $upload->autoSub     = false;
+        $upload->saveName    = $fileName;
+        $upload->replace     = true;
+        $upload->saveExt     = 'jpg';
+        $info = $upload->uploadOne($_FILES['file']);
+        if (!$info) {
+            $this->error($upload->getError());
+        } else {
+            $username = $_COOKIE['username'];
+            $config = array(
+                'imagePath' => $fileName . ".jpg";
+            );
+            $resolve = M('user')->where("username = '{$username}'")->save($config);
+            $resolve?$this->ajaxReturn(true):$this->getError();
+        }
+    }
+    public function loginLog () {
+        $this->display();
+    }
+    public function loginCheck () {
+        $login_log = M('login_log')->order('id DESC')->select();
+        ! empty($login_log)
+        ? $this->arrayRecursive($login_log, 'urldecode', true)
+        : $this->ajaxReturn(false, 'eval');
+        $login_log = urldecode(json_encode($login_log));
+        $loginList = "{\"code\":0, \"msg\":\"\", \"count\":0, \"data\":$login_log}";
+        $this->ajaxReturn($loginList, 'eval');
+    }
+    public function loginOut () {
+        cookie('username', null);
+        empty($_COOKIE['username'])
+            ? $this->ajaxReturn(true)
+            : $this->ajaxReturn(false);
+    }
+    public function setCache () {
+        $redis = new \Redis();
+        $redis->connect('211.149.233.203', 6379);
+        $redis->auth('visitpass');
+        $redis->select();
+        if ($redis->ping() == '+PONG') return $redis;
+        throw new Exception("Connection Redis Failed");
+    }
+    private function arraySplice ($hospitalVisit) {
+        if (! is_array($hospitalVisit)) return false;
+        for ($i = 0; $i < count($hospitalVisit); $i ++) {
+            $diseaseTrim = trim($hospitalVisit[$i]['diseases']);
+            $desc1 = trim($hospitalVisit[$i]['desc1']);
+            unset($hospitalVisit[$i]['diseases']);
+            unset($hospitalVisit[$i]['desc1']);
+            $hospitalVisit[$i]['desc1'] = $desc1;
+            $hospitalVisit[$i]['diseases'] = $diseaseTrim;
+        }
+        return $hospitalVisit;
+    }
+    public function createTable ($tableName) {
+        $sql = <<<sql
+            CREATE  TABLE `$tableName` (
+            `id` INT NOT NULL AUTO_INCREMENT,
+            `name` VARCHAR(15) NOT NULL DEFAULT '',
+            `old` INT NOT NULL DEFAULT 0,
+            `phone` BIGINT(20) NOT NULL DEFAULT 0,
+            `qq` VARCHAR(30) NOT NULL,
+            `diseases` VARCHAR(30) NOT NULL,
+            `fromaddress` VARCHAR(15) NOT NULL,
+            `switch` VARCHAR(15) NOT NULL DEFAULT '外地',
+            `sex` VARCHAR(15) NOT NULL DEFAULT '男',
+            `desc1` VARCHAR(1500) NOT NULL DEFAULT '',
+            `expert` VARCHAR(10) NOT NULL,
+            `oldDate` date NOT NULL,
+            `desc2` VARCHAR(300) NOT NULL DEFAULT '',
+            `status` VARCHAR(15) NOT NULL,
+            `newDate` date NOT NULL,
+            `currentTime` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+            `custService` VARCHAR(30) NOT NULL,
+            PRIMARY KEY(`id`),
+            KEY `oldDate` (`oldDate`),
+            KEY `status` (`status`)
+            ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+sql;
+        if (M()->query($sql)) return true;
+        return false;
     }
 }
