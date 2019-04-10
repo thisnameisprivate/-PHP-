@@ -47,5 +47,5 @@ function handleLogin ($user, $pass, $ip) {
             break;
     }
     Logger::logIP($user, $ip, $this->getStatus());
-    return $ret;
+    return $ret;;
 }
