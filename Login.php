@@ -31,7 +31,8 @@ class Login {
         return $this->status;
     }
 }
-function handleLogin ($user, $pass, $ip) {
+function handleLogin ($user, $pass, $ip)
+{
     switch (rand(1, 3)) {
         case 1:
             $this->setStatus(self::LOGIN_ACCESS, $user, $ip);
