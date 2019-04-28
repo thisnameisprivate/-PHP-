@@ -3,7 +3,7 @@
 class Controller {
     private $context;
     public function __construct () {
-        $this->context = new CommandContext()
+        $this->context = new CommandContext();
     }
     public function getContext () {
         return $this->context;
