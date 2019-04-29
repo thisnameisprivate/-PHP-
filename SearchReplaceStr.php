@@ -1,6 +1,6 @@
 <?php
 
-class SEarchReplaceStr {
+class SearchReplaceStr {
     private $search = null;
     private $matchStr = null;
     public function __construct ($search, $matchStr) {
