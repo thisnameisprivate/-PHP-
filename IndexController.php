@@ -592,7 +592,7 @@ class IndexController extends Controller {
         } else {
             $username = $_COOKIE['username'];
             $config = array(
-                'imagePath' => $fileName . ".jpg";
+                'imagePath' => $fileName . ".jpg"
             );
             $resolve = M('user')->where("username = '{$username}'")->save($config);
             $resolve?$this->ajaxReturn(true):$this->getError();
