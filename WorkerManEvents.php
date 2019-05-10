@@ -47,6 +47,6 @@ class WorkerManEvents {
         $redis->auth('visitxxxx');
         $redis->select(6);
         if ($redis->ping() == '+PONG') return $redis;
-        throw new Exception("Redis Connection Failed!");
+        throw new Exception("Redis Connection Failed!!!");
     }
 }
