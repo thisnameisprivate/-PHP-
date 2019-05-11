@@ -10,4 +10,4 @@ const mySetInterval = (cb, time) => {
 
 mySetInterval(() => {
     console.log(new Date());
-}, 1000)
+}, 1000) 
