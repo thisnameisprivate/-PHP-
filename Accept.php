@@ -34,3 +34,9 @@ function accept3 (ArmyVisitor $visitor) {
         $thisunit->accept($visitor);
     }
 }
+function accept4 (ArmyVisitor $visitor) {
+    parent::accept($visitor);
+    foreach ($this->units as $thisunit) {
+        $thisinut->accept($visitor);
+    }
+}
