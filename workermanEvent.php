@@ -31,7 +31,7 @@ class workermanEvent {
         $redis = self::connectRedis();
         $keys_name = $redis->keys('*');
         $redis_collection = [];
-        for ($i = 0; $i < count($kyes_name); $i ++) {
+        for ($i = 0; $i < count($keys_name); $i ++) {
             $redis_collection[$keys_name[$i]] = $redis->get($keys_name[$i]);
         }
         $client_id = array_search($client_id, $redis_collection);
