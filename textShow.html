@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>查理的最后一封信</title>
+    <style type="text/css">
+        #divTyping{ height:2000px; }
+        a{ text-decoration:none; color:cornflowerblue; }
+    </style>
+</head>
+<body id="body">
+    <div id="divTyping"></div>
+</body>
+<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript">
+    var string = "壁花少年-查理的最后一封信" +
+        "<p style='color:red'>(Let's drive)\n</p>" + "<br>" +
+        "(wow)\n" + "<br>" +
+        "I don't know if I will have the time to write any more letters\n" + "<br>" +
+        "<a href=''>我不知道自己是否还有时间继续写信给你\n</a>" + "<br><br>" +
+        "Because I might be too busy trying to participate\n" + "<br>" +
+        "<a href=''>因为我正忙于和这个世界进行更多的接触\n</a>" + "<br><br>" +
+        "So, if this does end up being the last letter\n" + "<br>" +
+        "<a href=''>所以 如果这会成为我寄给你的最后一封信\n</a>" + "<br><br>" +
+        "I just want you to know that\n" + "<br>" +
+        "<a href=''>我想告诉你\n</a>" + "<br><br>" +
+        "I was in a bad place before I started high school\n" + "<br>" +
+        "<a href=''>在高中之前 我的生活很不好过\n</a>" + "<br><br>" +
+        "And you helped me\n" + "<br>" +
+        "<a href=''>而你带着我找到了光明\n</a>" + "<br><br>" +
+        "Even if you didn't know what I was talking about\n" + "<br>" +
+        "<a href=''>即使你不明白我在说什么\n</a>" + "<br><br>" +
+        "Or know someone who's gone through it\n" + "<br>" +
+        "<a href=''>不知道这一切是谁的经历 也无需在意\n</a>" + "<br><br>" +
+        "It made me not feel alone\n" + "<br>" +
+        "<a href=''>这些一度使我不再感到孤独\n</a>" + "<br><br>" +
+        "Because I know there are people who say\n" + "<br>" +
+        "<a href=''>因为我知道有些人不会相信\n</a>" + "<br><br>" +
+        "all of these things don't happen\n" + "<br>" +
+        "<a href=''>这是一个真实的故事\n</a>" + "<br><br>" +
+        "And there are people\n" + "<br>" +
+        "<a href=''>还有些人\n</a>" + "<br><br>" +
+        "who forget what it's like to be 16 when they turn 17\n" + "<br>" +
+        "<a href=''>活到17岁之后便忘却了16岁时自己的模样\n</a>" + "<br><br>" +
+        "I know these will all be stories someday\n" + "<br>" +
+        "<a href=''>我知道这一切终会成为往事\n</a>" + "<br><br>" +
+        "And our pictures will become old photographs\n" + "<br>" +
+        "<a href=''>我们的面容会定格在泛黄的老照片里\n</a>" + "<br><br>" +
+        "And we'll all become somebody's mom or dad\n" + "<br>" +
+        "<a href=''>我们也终将为人父母\n</a>" + "<br><br>" +
+        "But right now\n" + "<br>" +
+        "<a href=''>但是现在\n</a>" + "<br><br>" +
+        "these moments are not stories\n" + "<br>" +
+        "<a href=''>这些瞬间还未过去\n</a>" + "<br><br>" +
+        "This is happening\n" + "<br>" +
+        "<a href=''>故事正在发生\n</a>" + "<br><br>" +
+        "I am here\n" + "<br>" +
+        "<a href=''>而我就在这里\n</a>" + "<br><br>" +
+        "And I am looking at her\n" + "<br>" +
+        "<a href=''>正凝望着她\n</a>" + "<br><br>" +
+        "And she is so beautiful\n" + "<br>" +
+        "<a href=''>她是那样地美丽\n</a>" + "<br><br>" +
+        "I can see it\n" + "<br>" +
+        "<a href=''>我看见了\n</a>" + "<br><br>" +
+        "This one moment when you know you're not a sad story\n" + "<br>" +
+        "<a href=''>这一刻 你知道你不是悲剧的主角\n</a>" + "<br><br>" +
+        "You are alive\n" + "<br>" +
+        "<a href=''>你充满生命力\n</a>" + "<br><br>" +
+        "And you stand up and see the lights on buildings\n" + "<br>" +
+        "<a href=''>你站起来 看着灯火阑珊的夜色\n</a>" + "<br><br>" +
+        "And everything that makes you wonder\n" + "<br>" +
+        "<a href=''>一切都让你惊叹不已\n</a>" + "<br><br>" +
+        "And you are listening to that song on that drive\n" + "<br>" +
+        "<a href=''>听着音乐 急速穿过明暗交错的隧道\n</a>" + "<br><br>" +
+        "With the people you love most in this world\n" + "<br>" +
+        "<a href=''>和最无可替代的两人一起</a>\n" + "<br><br>" +
+        "And in this moment\n" + "<br>" +
+        "<a href=''>此时此刻\n</a>" + "<br><br>" +
+        "I swear...\n" + "<br>" +
+        "<a href=''>我敢说\n</a>" + "<br><br>" +
+        "We are infinite.\n" + "<br>" +
+        "<a href=''>我们 拥有无限\n</a>" + "<br><br>" +
+        "MiraclesGG-Heroes";
+    var i = 0;
+    var divScrollTop = 0;
+    function typing () {
+        var divTyping = document.getElementById('divTyping');
+        if (i <= string.length) {
+            divTyping.innerHTML = string.slice(0, i ++) + '_';
+            setTimeout('typing()', 10);
+        } else {
+            divTyping.innerHTML = string;
+        }
+    }
+    function scrollActive () {
+        var body = document.getElementsByTagName('body')[0];
+        console.log(body);
+        setInterval (function () {
+            body.scrollTop(200);
+        }, 500);
+    }
+    scrollActive();
+    typing();
+</script>
+</html>

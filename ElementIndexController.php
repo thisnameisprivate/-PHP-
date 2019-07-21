@@ -440,5 +440,121 @@ class IndexController extends Controller {
         $collection['yesterArrivalOut'] = $this->detail("TO_DAYS(oldDate) - TO_DAYS(oldDate) = 1", "status != '已到'");
         $collection['thisArrival'] = $this->detail("DATE_FORMAT(oldDate, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')", "status = '已到'");
         $collection['thisArrivalOut'] = $this->detail("DATE_FORMAT(oldDate, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')", "status != '已到'");
+        $collection['lastArrival'] = $this->detail("PERIOD_DIFF(oldDate, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')", "status = '已到'");
+        $collection['lastArrivalOut'] = $this->detail("PERIOD_DIFF(oldDate, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')", "status != '未到'");
+        $collection['arrivalTotal'] = $collection['arrival'] + $collection['arrivalOut'];
+        $collection['yesterTotal'] = $collection['yesterArrival'] + $collection['yesterArrivalOut'];
+        $collection['thisTotal'] = $collection['thisArrival'] + $collection['thisArrivalOut'];
+        $collection['lastTotal'] = $collection['lastArrival'] + $collection['lastArrivalOut'];
+        return $collection;
+    }
+    public function modthdata () {
+        $instance = M($_COOKIE['tableName']);
+        $redis = $this->setCache();
+        if ($redis->exists($_COOKIE['tableName'] . 'Month_echearts')) {
+            $redis->expire($_COOKIE['tableName'] . "Month_echearts", 1200);
+        } else {
+            $arrival = [];
+            $arrival['reser'] = $instance->where("status = '预约未定' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FOMRAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['advan'] = $instance->where("status = '等待' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['arrival'] = $instance->where("status = '已到' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FOMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['arrivalOut'] = $instance->where("status = '未到' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['halfTotal'] = $instance->where("status = '全流失'  AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['half'] = $instance->where("status = '半流失' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $arrival['treat'] = $instance->where("status = '已诊治' AND DATE_FORMAT(oldDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->count();
+            $redis->set($_COOKIE['tableName'] . 'Month_echarts', json_encode($arrival));
+            $redis->expire($_COOKIE['tableName'] . 'Month_echarts', 1200);
+        }
+        $arrival = json_decode($redis->get($_COOKIE['tableName'] . 'Month_echearts'), true);
+        $this->assign('echarts', $arrival);
+        $this->display();
+    }
+    private function detail ($time, $status, $persion = null) {
+        $tableName = $_COOKIE['tableName'];
+        $allStatus = is_null($persion)
+            ? M($tableName)->where([$time, $status])->count()
+            : M($tableName)->where([$time, $status, $persion])->count();
+        return $allStatus;
+    }
+    private function arrayRecursive (&$arrya, $function, $apply_to_keys_also = false) {
+        static $recursive_counter = 0;
+        if (++ $recursive_counter > 1000) {
+            die ('Possible deep recursion attack');
+        }
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $this->arrayRecursive($array[$key], $function, $apply_to_keys_also);
+            } else {
+                $array[$key] = $function($value);
+            }
+            if ($apply_to_keys_also && is_string($key)) {
+                $new_key = $function($key);
+                if ($new_key != $key) {
+                    $array[$new_key] = $array[$key];
+                    unset($array[$key]);
+                }
+            }
+        }
+        $recursive_counter --;
+    }
+    public function access () {
+        $this->display();
+    }
+    public function accessCheck () {
+        $user = M('management')->join('user')->where('user.username = management.pid')->select();
+        ! empty($user)
+            ? $this->arrayRecursive($user, 'urldecode', true)
+            : $this->ajaxReturn(false, 'eval');
+        $user = urldecode(json_encode($user));
+        $userList = "{\"code\": 0, \"msg\": \"\", \"count\":0, \"data\":$user}";
+        $this->ajaxReturn($userList, 'eval');
+    }
+    public function userDel () {
+        if (! is_numeric($_GET['id'])) $this->ajaxReturn(false, 'eval');
+        $username = M('user')->where("id = '{$_GET['id']}'")->field('username')->select();
+        $resolve = M('user')->where("id = {$_GET['id']}")->delete();
+        ! empty($resolve)
+            ? $this->ajaxReturn(true, 'eval')
+            : $this->ajaxReturn(false, 'eval');
+    }
+    public function userAdd () {
+        $management = json_decode($_GET['data'], true);
+        $userList['password'] = MD5($management['password']);
+        $userList['username'] = $management['username'];
+        array_splice($management, 0, 2);
+        $management['pid'] = $userList['username'];
+        $managementResolve = M('management')->add($management);
+        $resolve = M('user')->add($userList);
+        ! empty($managementResolve) && ! empty($resolve)
+            ? $this->ajaxReturn(true, 'eval')
+            : $this->ajaxReturn(false, 'eval');
+    }
+    public function userEdit () {
+        $management = json_decode($_GET['data'], true);
+        $managementKey = array_keys($management);
+        $fields = M('management')->getDbFields();
+        $redundantKeys = array_diff($fields, $managementKey);
+        while (list($k, $v) = each($redundatKeys)) $redundant[trim($v)] = '';
+        $management = array_merge($redundant, $management);
+        $addtime = date('Y-m-d H:i:s', time());
+        unset($management['id']);
+        $userList['password'] = MD5($management['password']);
+        $userList['username'] = $management['username'];
+        $userList['addtime'] = $addtime;
+        $management['pid'] = $userList['username'];
+        $management['addtime'] = $addtime;
+        unset($management['username'], $management['password']);
+        $username = M('user')->where("id = '{$_GET['id']}'")->field('username')->select();
+        $resolve = M('user')->where("id = '{$_GET['id']}'")->save($userList);
+        $management =  M('management')->where("pid = '{$username[0]['username']}'")->count();
+        $managementResolve = empty($managementUser)
+            ? M('management')->add($management)
+            : M('management')->where("pid = '{$username[0]['username']}'")->save($management);
+        ! empty($managementResolve) && ! empty($resolve)
+            ? $this->ajaxReturn(true, 'eval')
+            : $this->ajaxReturn(false, 'eval');
+    }
+    public function resources () {
+        $this->display();
     }
 }
