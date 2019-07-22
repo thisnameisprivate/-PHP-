@@ -1,9 +1,9 @@
 <?php
 
-abstract class ApptEncoder {
-    public abstract function encode ();
+abstract class Appencoder2 {
+    public abstract function encode();
 }
-class BloggsApptEncoder extends ApptEncoder {
+class BloggsApptEncoder extends Appencoder2 {
     public function encode () {
         return "Appointment data encoded in MegaCal format\n";
     }
@@ -28,20 +28,19 @@ class CommsManager2 {
     public function getApptEncoder () {
         switch ($this->mode) {
             case (self::MEGA):
-                return new MegaApptEncoder();
+                return new MageApptEncoder();
             default:
-                return new BloggsApptEncoder();
+                return new BloggsAppEncoder();
         }
     }
 }
-
 $comms = new CommsManager(CommsManager::MEGA);
-$apptEncoder = $comms->getApptEncdoer();
+$apptEncoder = $coms->getApptEncoder();
 print $apptEncoder->encode();
 
-class CommsManager3 {
+class CommsManger3 {
     const BLOGGS = 1;
-    const MEGA   = 2;
+    const MEGA = 2;
     private $mode;
     public function __construct () {
         $this->mode = $mode;
